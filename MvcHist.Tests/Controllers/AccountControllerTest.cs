@@ -7,6 +7,7 @@ using System.Web.Security;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MvcHist;
 using MvcHist.Controllers;
+using MvcHist.Models;
 
 namespace MvcHist.Tests.Controllers
 {
@@ -16,640 +17,386 @@ namespace MvcHist.Tests.Controllers
     {
 
         [TestMethod]
-        public void ChangePasswordGetReturnsView()
+        public void ChangePassword_Get_ReturnsView()
         {
             // Arrange
             AccountController controller = GetAccountController();
 
             // Act
-            ViewResult result = (ViewResult)controller.ChangePassword();
+            ActionResult result = controller.ChangePassword();
 
             // Assert
-            Assert.AreEqual(6, result.ViewData["PasswordLength"]);
+            Assert.IsInstanceOfType(result, typeof(ViewResult));
+            Assert.AreEqual(10, ((ViewResult)result).ViewData["PasswordLength"]);
         }
 
         [TestMethod]
-        public void ChangePasswordPostRedirectsOnSuccess()
+        public void ChangePassword_Post_ReturnsRedirectOnSuccess()
+        {
+            // Arrange
+            AccountController controller = GetAccountController();
+            ChangePasswordModel model = new ChangePasswordModel()
+            {
+                OldPassword = "goodOldPassword",
+                NewPassword = "goodNewPassword",
+                ConfirmPassword = "goodNewPassword"
+            };
+
+            // Act
+            ActionResult result = controller.ChangePassword(model);
+
+            // Assert
+            Assert.IsInstanceOfType(result, typeof(RedirectToRouteResult));
+            RedirectToRouteResult redirectResult = (RedirectToRouteResult)result;
+            Assert.AreEqual("ChangePasswordSuccess", redirectResult.RouteValues["action"]);
+        }
+
+        [TestMethod]
+        public void ChangePassword_Post_ReturnsViewIfChangePasswordFails()
+        {
+            // Arrange
+            AccountController controller = GetAccountController();
+            ChangePasswordModel model = new ChangePasswordModel()
+            {
+                OldPassword = "goodOldPassword",
+                NewPassword = "badNewPassword",
+                ConfirmPassword = "badNewPassword"
+            };
+
+            // Act
+            ActionResult result = controller.ChangePassword(model);
+
+            // Assert
+            Assert.IsInstanceOfType(result, typeof(ViewResult));
+            ViewResult viewResult = (ViewResult)result;
+            Assert.AreEqual(model, viewResult.ViewData.Model);
+            Assert.AreEqual("The current password is incorrect or the new password is invalid.", controller.ModelState[""].Errors[0].ErrorMessage);
+            Assert.AreEqual(10, viewResult.ViewData["PasswordLength"]);
+        }
+
+        [TestMethod]
+        public void ChangePassword_Post_ReturnsViewIfModelStateIsInvalid()
+        {
+            // Arrange
+            AccountController controller = GetAccountController();
+            ChangePasswordModel model = new ChangePasswordModel()
+            {
+                OldPassword = "goodOldPassword",
+                NewPassword = "goodNewPassword",
+                ConfirmPassword = "goodNewPassword"
+            };
+            controller.ModelState.AddModelError("", "Dummy error message.");
+
+            // Act
+            ActionResult result = controller.ChangePassword(model);
+
+            // Assert
+            Assert.IsInstanceOfType(result, typeof(ViewResult));
+            ViewResult viewResult = (ViewResult)result;
+            Assert.AreEqual(model, viewResult.ViewData.Model);
+            Assert.AreEqual(10, viewResult.ViewData["PasswordLength"]);
+        }
+
+        [TestMethod]
+        public void ChangePasswordSuccess_ReturnsView()
         {
             // Arrange
             AccountController controller = GetAccountController();
 
             // Act
-            RedirectToRouteResult result = (RedirectToRouteResult)controller.ChangePassword("oldPass", "newPass", "newPass");
+            ActionResult result = controller.ChangePasswordSuccess();
 
             // Assert
-            Assert.AreEqual("ChangePasswordSuccess", result.RouteValues["action"]);
+            Assert.IsInstanceOfType(result, typeof(ViewResult));
         }
 
         [TestMethod]
-        public void ChangePasswordPostReturnsViewIfCurrentPasswordNotSpecified()
+        public void LogOff_LogsOutAndRedirects()
         {
             // Arrange
             AccountController controller = GetAccountController();
 
             // Act
-            ViewResult result = (ViewResult)controller.ChangePassword("", "newPassword", "newPassword");
+            ActionResult result = controller.LogOff();
 
             // Assert
-            Assert.AreEqual(6, result.ViewData["PasswordLength"]);
-            Assert.AreEqual("You must specify a current password.", result.ViewData.ModelState["currentPassword"].Errors[0].ErrorMessage);
+            Assert.IsInstanceOfType(result, typeof(RedirectToRouteResult));
+            RedirectToRouteResult redirectResult = (RedirectToRouteResult)result;
+            Assert.AreEqual("Home", redirectResult.RouteValues["controller"]);
+            Assert.AreEqual("Index", redirectResult.RouteValues["action"]);
+            Assert.IsTrue(((MockFormsAuthenticationService)controller.FormsService).SignOut_WasCalled);
         }
 
         [TestMethod]
-        public void ChangePasswordPostReturnsViewIfNewPasswordDoesNotMatchConfirmPassword()
+        public void LogOn_Get_ReturnsView()
         {
             // Arrange
             AccountController controller = GetAccountController();
 
             // Act
-            ViewResult result = (ViewResult)controller.ChangePassword("currentPassword", "newPassword", "otherPassword");
+            ActionResult result = controller.LogOn();
 
             // Assert
-            Assert.AreEqual(6, result.ViewData["PasswordLength"]);
-            Assert.AreEqual("The new password and confirmation password do not match.", result.ViewData.ModelState["_FORM"].Errors[0].ErrorMessage);
+            Assert.IsInstanceOfType(result, typeof(ViewResult));
         }
 
         [TestMethod]
-        public void ChangePasswordPostReturnsViewIfNewPasswordIsNull()
+        public void LogOn_Post_ReturnsRedirectOnSuccess_WithoutReturnUrl()
+        {
+            // Arrange
+            AccountController controller = GetAccountController();
+            LogOnModel model = new LogOnModel()
+            {
+                UserName = "someUser",
+                Password = "goodPassword",
+                RememberMe = false
+            };
+
+            // Act
+            ActionResult result = controller.LogOn(model, null);
+
+            // Assert
+            Assert.IsInstanceOfType(result, typeof(RedirectToRouteResult));
+            RedirectToRouteResult redirectResult = (RedirectToRouteResult)result;
+            Assert.AreEqual("Home", redirectResult.RouteValues["controller"]);
+            Assert.AreEqual("Index", redirectResult.RouteValues["action"]);
+            Assert.IsTrue(((MockFormsAuthenticationService)controller.FormsService).SignIn_WasCalled);
+        }
+
+        [TestMethod]
+        public void LogOn_Post_ReturnsRedirectOnSuccess_WithReturnUrl()
+        {
+            // Arrange
+            AccountController controller = GetAccountController();
+            LogOnModel model = new LogOnModel()
+            {
+                UserName = "someUser",
+                Password = "goodPassword",
+                RememberMe = false
+            };
+
+            // Act
+            ActionResult result = controller.LogOn(model, "/someUrl");
+
+            // Assert
+            Assert.IsInstanceOfType(result, typeof(RedirectResult));
+            RedirectResult redirectResult = (RedirectResult)result;
+            Assert.AreEqual("/someUrl", redirectResult.Url);
+            Assert.IsTrue(((MockFormsAuthenticationService)controller.FormsService).SignIn_WasCalled);
+        }
+
+        [TestMethod]
+        public void LogOn_Post_ReturnsViewIfModelStateIsInvalid()
+        {
+            // Arrange
+            AccountController controller = GetAccountController();
+            LogOnModel model = new LogOnModel()
+            {
+                UserName = "someUser",
+                Password = "goodPassword",
+                RememberMe = false
+            };
+            controller.ModelState.AddModelError("", "Dummy error message.");
+
+            // Act
+            ActionResult result = controller.LogOn(model, null);
+
+            // Assert
+            Assert.IsInstanceOfType(result, typeof(ViewResult));
+            ViewResult viewResult = (ViewResult)result;
+            Assert.AreEqual(model, viewResult.ViewData.Model);
+        }
+
+        [TestMethod]
+        public void LogOn_Post_ReturnsViewIfValidateUserFails()
+        {
+            // Arrange
+            AccountController controller = GetAccountController();
+            LogOnModel model = new LogOnModel()
+            {
+                UserName = "someUser",
+                Password = "badPassword",
+                RememberMe = false
+            };
+
+            // Act
+            ActionResult result = controller.LogOn(model, null);
+
+            // Assert
+            Assert.IsInstanceOfType(result, typeof(ViewResult));
+            ViewResult viewResult = (ViewResult)result;
+            Assert.AreEqual(model, viewResult.ViewData.Model);
+            Assert.AreEqual("The user name or password provided is incorrect.", controller.ModelState[""].Errors[0].ErrorMessage);
+        }
+
+        [TestMethod]
+        public void Register_Get_ReturnsView()
         {
             // Arrange
             AccountController controller = GetAccountController();
 
             // Act
-            ViewResult result = (ViewResult)controller.ChangePassword("currentPassword", null, null);
+            ActionResult result = controller.Register();
 
             // Assert
-            Assert.AreEqual(6, result.ViewData["PasswordLength"]);
-            Assert.AreEqual("You must specify a new password of 6 or more characters.", result.ViewData.ModelState["newPassword"].Errors[0].ErrorMessage);
+            Assert.IsInstanceOfType(result, typeof(ViewResult));
+            Assert.AreEqual(10, ((ViewResult)result).ViewData["PasswordLength"]);
         }
 
         [TestMethod]
-        public void ChangePasswordPostReturnsViewIfNewPasswordIsTooShort()
+        public void Register_Post_ReturnsRedirectOnSuccess()
         {
             // Arrange
             AccountController controller = GetAccountController();
+            RegisterModel model = new RegisterModel()
+            {
+                UserName = "someUser",
+                Email = "goodEmail",
+                Password = "goodPassword",
+                ConfirmPassword = "goodPassword"
+            };
 
             // Act
-            ViewResult result = (ViewResult)controller.ChangePassword("currentPassword", "12345", "12345");
+            ActionResult result = controller.Register(model);
 
             // Assert
-            Assert.AreEqual(6, result.ViewData["PasswordLength"]);
-            Assert.AreEqual("You must specify a new password of 6 or more characters.", result.ViewData.ModelState["newPassword"].Errors[0].ErrorMessage);
+            Assert.IsInstanceOfType(result, typeof(RedirectToRouteResult));
+            RedirectToRouteResult redirectResult = (RedirectToRouteResult)result;
+            Assert.AreEqual("Home", redirectResult.RouteValues["controller"]);
+            Assert.AreEqual("Index", redirectResult.RouteValues["action"]);
         }
 
         [TestMethod]
-        public void ChangePasswordPostReturnsViewIfProviderRejectsPassword()
+        public void Register_Post_ReturnsViewIfRegistrationFails()
         {
             // Arrange
             AccountController controller = GetAccountController();
+            RegisterModel model = new RegisterModel()
+            {
+                UserName = "duplicateUser",
+                Email = "goodEmail",
+                Password = "goodPassword",
+                ConfirmPassword = "goodPassword"
+            };
 
             // Act
-            ViewResult result = (ViewResult)controller.ChangePassword("oldPass", "badPass", "badPass");
+            ActionResult result = controller.Register(model);
 
             // Assert
-            Assert.AreEqual(6, result.ViewData["PasswordLength"]);
-            Assert.AreEqual("The current password is incorrect or the new password is invalid.", result.ViewData.ModelState["_FORM"].Errors[0].ErrorMessage);
+            Assert.IsInstanceOfType(result, typeof(ViewResult));
+            ViewResult viewResult = (ViewResult)result;
+            Assert.AreEqual(model, viewResult.ViewData.Model);
+            Assert.AreEqual("Username already exists. Please enter a different user name.", controller.ModelState[""].Errors[0].ErrorMessage);
+            Assert.AreEqual(10, viewResult.ViewData["PasswordLength"]);
         }
 
         [TestMethod]
-        public void ChangePasswordSuccess()
+        public void Register_Post_ReturnsViewIfModelStateIsInvalid()
         {
             // Arrange
             AccountController controller = GetAccountController();
+            RegisterModel model = new RegisterModel()
+            {
+                UserName = "someUser",
+                Email = "goodEmail",
+                Password = "goodPassword",
+                ConfirmPassword = "goodPassword"
+            };
+            controller.ModelState.AddModelError("", "Dummy error message.");
 
             // Act
-            ViewResult result = (ViewResult)controller.ChangePasswordSuccess();
+            ActionResult result = controller.Register(model);
 
             // Assert
-            Assert.IsNotNull(result);
-        }
-
-        [TestMethod]
-        public void ConstructorSetsProperties()
-        {
-            // Arrange
-            IFormsAuthentication formsAuth = new MockFormsAuthenticationService();
-            IMembershipService membershipService = new AccountMembershipService();
-
-            // Act
-            AccountController controller = new AccountController(formsAuth, membershipService);
-
-            // Assert
-            Assert.AreEqual(formsAuth, controller.FormsAuth, "FormsAuth property did not match.");
-            Assert.AreEqual(membershipService, controller.MembershipService, "MembershipService property did not match.");
-        }
-
-        [TestMethod]
-        public void ConstructorSetsPropertiesToDefaultValues()
-        {
-            // Act
-            AccountController controller = new AccountController();
-
-            // Assert
-            Assert.IsNotNull(controller.FormsAuth, "FormsAuth property is null.");
-            Assert.IsNotNull(controller.MembershipService, "MembershipService property is null.");
-        }
-
-        [TestMethod]
-        public void LoginGet()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            ViewResult result = (ViewResult)controller.LogOn();
-
-            // Assert
-            Assert.IsNotNull(result);
-        }
-
-        [TestMethod]
-        public void LoginPostRedirectsHomeIfLoginSuccessfulButNoReturnUrlGiven()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            RedirectToRouteResult result = (RedirectToRouteResult)controller.LogOn("someUser", "goodPass", true, null);
-
-            // Assert
-            Assert.AreEqual("Home", result.RouteValues["controller"]);
-            Assert.AreEqual("Index", result.RouteValues["action"]);
-        }
-
-        [TestMethod]
-        public void LoginPostRedirectsToReturnUrlIfLoginSuccessfulAndReturnUrlGiven()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            RedirectResult result = (RedirectResult)controller.LogOn("someUser", "goodPass", false, "someUrl");
-
-            // Assert
-            Assert.AreEqual("someUrl", result.Url);
-        }
-
-        [TestMethod]
-        public void LoginPostReturnsViewIfPasswordNotSpecified()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            ViewResult result = (ViewResult)controller.LogOn("username", "", true, null);
-
-            // Assert
-            Assert.AreEqual("You must specify a password.", result.ViewData.ModelState["password"].Errors[0].ErrorMessage);
-        }
-
-        [TestMethod]
-        public void LoginPostReturnsViewIfUsernameNotSpecified()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            ViewResult result = (ViewResult)controller.LogOn("", "somePass", false, null);
-
-            // Assert
-            Assert.AreEqual("You must specify a username.", result.ViewData.ModelState["username"].Errors[0].ErrorMessage);
-        }
-
-        [TestMethod]
-        public void LoginPostReturnsViewIfUsernameOrPasswordIsIncorrect()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            ViewResult result = (ViewResult)controller.LogOn("someUser", "badPass", true, null);
-
-            // Assert
-            Assert.AreEqual("The username or password provided is incorrect.", result.ViewData.ModelState["_FORM"].Errors[0].ErrorMessage);
-        }
-
-        [TestMethod]
-        public void LogOff()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            RedirectToRouteResult result = (RedirectToRouteResult)controller.LogOff();
-
-            // Assert
-            Assert.AreEqual("Home", result.RouteValues["controller"]);
-            Assert.AreEqual("Index", result.RouteValues["action"]);
-        }
-
-        [TestMethod]
-        public void RegisterGet()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            ViewResult result = (ViewResult)controller.Register();
-
-            // Assert
-            Assert.AreEqual(6, result.ViewData["PasswordLength"]);
-        }
-
-        [TestMethod]
-        public void RegisterPostRedirectsHomeIfRegistrationSuccessful()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            RedirectToRouteResult result = (RedirectToRouteResult)controller.Register("someUser", "email", "goodPass", "goodPass");
-
-            // Assert
-            Assert.AreEqual("Home", result.RouteValues["controller"]);
-            Assert.AreEqual("Index", result.RouteValues["action"]);
-        }
-
-        [TestMethod]
-        public void RegisterPostReturnsViewIfEmailNotSpecified()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            ViewResult result = (ViewResult)controller.Register("username", "", "password", "password");
-
-            // Assert
-            Assert.AreEqual(6, result.ViewData["PasswordLength"]);
-            Assert.AreEqual("You must specify an email address.", result.ViewData.ModelState["email"].Errors[0].ErrorMessage);
-        }
-
-        [TestMethod]
-        public void RegisterPostReturnsViewIfNewPasswordDoesNotMatchConfirmPassword()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            ViewResult result = (ViewResult)controller.Register("username", "email", "password", "password2");
-
-            // Assert
-            Assert.AreEqual(6, result.ViewData["PasswordLength"]);
-            Assert.AreEqual("The new password and confirmation password do not match.", result.ViewData.ModelState["_FORM"].Errors[0].ErrorMessage);
-        }
-
-        [TestMethod]
-        public void RegisterPostReturnsViewIfPasswordIsNull()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            ViewResult result = (ViewResult)controller.Register("username", "email", null, null);
-
-            // Assert
-            Assert.AreEqual(6, result.ViewData["PasswordLength"]);
-            Assert.AreEqual("You must specify a password of 6 or more characters.", result.ViewData.ModelState["password"].Errors[0].ErrorMessage);
-        }
-
-        [TestMethod]
-        public void RegisterPostReturnsViewIfPasswordIsTooShort()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            ViewResult result = (ViewResult)controller.Register("username", "email", "12345", "12345");
-
-            // Assert
-            Assert.AreEqual(6, result.ViewData["PasswordLength"]);
-            Assert.AreEqual("You must specify a password of 6 or more characters.", result.ViewData.ModelState["password"].Errors[0].ErrorMessage);
-        }
-
-        [TestMethod]
-        public void RegisterPostReturnsViewIfRegistrationFails()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            ViewResult result = (ViewResult)controller.Register("someUser", "DuplicateUserName" /* error */, "badPass", "badPass");
-
-            // Assert
-            Assert.AreEqual(6, result.ViewData["PasswordLength"]);
-            Assert.AreEqual("Username already exists. Please enter a different user name.", result.ViewData.ModelState["_FORM"].Errors[0].ErrorMessage);
-        }
-
-        [TestMethod]
-        public void RegisterPostReturnsViewIfUsernameNotSpecified()
-        {
-            // Arrange
-            AccountController controller = GetAccountController();
-
-            // Act
-            ViewResult result = (ViewResult)controller.Register("", "email", "password", "password");
-
-            // Assert
-            Assert.AreEqual(6, result.ViewData["PasswordLength"]);
-            Assert.AreEqual("You must specify a username.", result.ViewData.ModelState["username"].Errors[0].ErrorMessage);
+            Assert.IsInstanceOfType(result, typeof(ViewResult));
+            ViewResult viewResult = (ViewResult)result;
+            Assert.AreEqual(model, viewResult.ViewData.Model);
+            Assert.AreEqual(10, viewResult.ViewData["PasswordLength"]);
         }
 
         private static AccountController GetAccountController()
         {
-            IFormsAuthentication formsAuth = new MockFormsAuthenticationService();
-            MembershipProvider membershipProvider = new MockMembershipProvider();
-            AccountMembershipService membershipService = new AccountMembershipService(membershipProvider);
-            AccountController controller = new AccountController(formsAuth, membershipService);
-            ControllerContext controllerContext = new ControllerContext(new MockHttpContext(), new RouteData(), controller);
-            controller.ControllerContext = controllerContext;
+            AccountController controller = new AccountController()
+            {
+                FormsService = new MockFormsAuthenticationService(),
+                MembershipService = new MockMembershipService()
+            };
+            controller.ControllerContext = new ControllerContext()
+            {
+                Controller = controller,
+                RequestContext = new RequestContext(new MockHttpContext(), new RouteData())
+            };
             return controller;
         }
 
-        public class MockFormsAuthenticationService : IFormsAuthentication
+        private class MockFormsAuthenticationService : IFormsAuthenticationService
         {
+            public bool SignIn_WasCalled;
+            public bool SignOut_WasCalled;
+
             public void SignIn(string userName, bool createPersistentCookie)
             {
+                // verify that the arguments are what we expected
+                Assert.AreEqual("someUser", userName);
+                Assert.IsFalse(createPersistentCookie);
+
+                SignIn_WasCalled = true;
             }
 
             public void SignOut()
             {
+                SignOut_WasCalled = true;
             }
         }
 
-        public class MockIdentity : IIdentity
+        private class MockHttpContext : HttpContextBase
         {
-            public string AuthenticationType
-            {
-                get
-                {
-                    return "MockAuthentication";
-                }
-            }
-
-            public bool IsAuthenticated
-            {
-                get
-                {
-                    return true;
-                }
-            }
-
-            public string Name
-            {
-                get
-                {
-                    return "someUser";
-                }
-            }
-        }
-
-        public class MockPrincipal : IPrincipal
-        {
-            IIdentity _identity;
-
-            public IIdentity Identity
-            {
-                get
-                {
-                    if (_identity == null)
-                    {
-                        _identity = new MockIdentity();
-                    }
-                    return _identity;
-                }
-            }
-
-            public bool IsInRole(string role)
-            {
-                return false;
-            }
-        }
-
-        public class MockMembershipUser : MembershipUser
-        {
-            public override bool ChangePassword(string oldPassword, string newPassword)
-            {
-                return newPassword.Equals("newPass");
-            }
-        }
-
-        public class MockHttpContext : HttpContextBase
-        {
-            private IPrincipal _user;
+            private readonly IPrincipal _user = new GenericPrincipal(new GenericIdentity("someUser"), null /* roles */);
 
             public override IPrincipal User
             {
                 get
                 {
-                    if (_user == null)
-                    {
-                        _user = new MockPrincipal();
-                    }
                     return _user;
                 }
                 set
                 {
-                    _user = value;
+                    base.User = value;
                 }
             }
         }
 
-        public class MockMembershipProvider : MembershipProvider
+        private class MockMembershipService : IMembershipService
         {
-            string _applicationName;
-
-            public override string ApplicationName
+            public int MinPasswordLength
             {
-                get
-                {
-                    return _applicationName;
-                }
-                set
-                {
-                    _applicationName = value;
-                }
+                get { return 10; }
             }
 
-            public override bool EnablePasswordReset
+            public bool ValidateUser(string userName, string password)
             {
-                get
-                {
-                    return false;
-                }
+                return (userName == "someUser" && password == "goodPassword");
             }
 
-            public override bool EnablePasswordRetrieval
+            public MembershipCreateStatus CreateUser(string userName, string password, string email)
             {
-                get
+                if (userName == "duplicateUser")
                 {
-                    return false;
-                }
-            }
-
-            public override int MaxInvalidPasswordAttempts
-            {
-                get
-                {
-                    return 0;
-                }
-            }
-
-            public override int MinRequiredNonAlphanumericCharacters
-            {
-                get
-                {
-                    return 0;
-                }
-            }
-
-            public override int MinRequiredPasswordLength
-            {
-                get
-                {
-                    return 6;
-                }
-            }
-
-            public override string Name
-            {
-                get
-                {
-                    return null;
-                }
-            }
-
-            public override int PasswordAttemptWindow
-            {
-                get
-                {
-                    return 3;
-                }
-            }
-
-            public override MembershipPasswordFormat PasswordFormat
-            {
-                get
-                {
-                    return MembershipPasswordFormat.Clear;
-                }
-            }
-
-            public override string PasswordStrengthRegularExpression
-            {
-                get
-                {
-                    return null;
-                }
-            }
-
-            public override bool RequiresQuestionAndAnswer
-            {
-                get
-                {
-                    return false;
-                }
-            }
-
-            public override bool RequiresUniqueEmail
-            {
-                get
-                {
-                    return false;
-                }
-            }
-
-            public override bool ChangePassword(string username, string oldPassword, string newPassword)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override bool ChangePasswordQuestionAndAnswer(string username, string password, string newPasswordQuestion, string newPasswordAnswer)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override MembershipUser CreateUser(string username, string password, string email, string passwordQuestion, string passwordAnswer, bool isApproved, Object providerUserKey, out MembershipCreateStatus status)
-            {
-                MockMembershipUser user = new MockMembershipUser();
-
-                if (username.Equals("someUser") && password.Equals("goodPass") && email.Equals("email"))
-                {
-                    status = MembershipCreateStatus.Success;
-                }
-                else
-                {
-                    // the 'email' parameter contains the status we want to return to the user
-                    status = (MembershipCreateStatus)Enum.Parse(typeof(MembershipCreateStatus), email);
+                    return MembershipCreateStatus.DuplicateUserName;
                 }
 
-                return user;
+                // verify that values are what we expected
+                Assert.AreEqual("goodPassword", password);
+                Assert.AreEqual("goodEmail", email);
+
+                return MembershipCreateStatus.Success;
             }
 
-            public override bool DeleteUser(string username, bool deleteAllRelatedData)
+            public bool ChangePassword(string userName, string oldPassword, string newPassword)
             {
-                throw new NotImplementedException();
+                return (userName == "someUser" && oldPassword == "goodOldPassword" && newPassword == "goodNewPassword");
             }
-
-            public override MembershipUserCollection FindUsersByEmail(string emailToMatch, int pageIndex, int pageSize, out int totalRecords)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override MembershipUserCollection FindUsersByName(string usernameToMatch, int pageIndex, int pageSize, out int totalRecords)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override MembershipUserCollection GetAllUsers(int pageIndex, int pageSize, out int totalRecords)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override int GetNumberOfUsersOnline()
-            {
-                throw new NotImplementedException();
-            }
-
-            public override string GetPassword(string username, string answer)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override string GetUserNameByEmail(string email)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override MembershipUser GetUser(Object providerUserKey, bool userIsOnline)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override MembershipUser GetUser(string username, bool userIsOnline)
-            {
-                return new MockMembershipUser();
-            }
-
-            public override string ResetPassword(string username, string answer)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override bool UnlockUser(string userName)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override void UpdateUser(MembershipUser user)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override bool ValidateUser(string username, string password)
-            {
-                return password.Equals("goodPass");
-            }
-
         }
+
     }
 }
