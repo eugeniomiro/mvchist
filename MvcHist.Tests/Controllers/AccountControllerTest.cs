@@ -164,7 +164,7 @@ namespace MvcHist.Tests.Controllers
         }
 
         [TestMethod]
-        public void LogOn_Post_ReturnsRedirectOnSuccess_WithReturnUrl()
+        public void LogOn_Post_ReturnsRedirectOnSuccess_WithLocalReturnUrl()
         {
             // Arrange
             AccountController controller = GetAccountController();
@@ -182,6 +182,29 @@ namespace MvcHist.Tests.Controllers
             Assert.IsInstanceOfType(result, typeof(RedirectResult));
             RedirectResult redirectResult = (RedirectResult)result;
             Assert.AreEqual("/someUrl", redirectResult.Url);
+            Assert.IsTrue(((MockFormsAuthenticationService)controller.FormsService).SignIn_WasCalled);
+        }
+
+        [TestMethod]
+        public void LogOn_Post_ReturnsRedirectToHomeOnSuccess_WithExternalReturnUrl()
+        {
+            // Arrange
+            AccountController controller = GetAccountController();
+            LogOnModel model = new LogOnModel()
+            {
+                UserName = "someUser",
+                Password = "goodPassword",
+                RememberMe = false
+            };
+
+            // Act
+            ActionResult result = controller.LogOn(model, "http://malicious.example.net");
+
+            // Assert
+            Assert.IsInstanceOfType(result, typeof(RedirectToRouteResult));
+            RedirectToRouteResult redirectResult = (RedirectToRouteResult)result;
+            Assert.AreEqual("Home", redirectResult.RouteValues["controller"]);
+            Assert.AreEqual("Index", redirectResult.RouteValues["action"]);
             Assert.IsTrue(((MockFormsAuthenticationService)controller.FormsService).SignIn_WasCalled);
         }
 
@@ -316,15 +339,17 @@ namespace MvcHist.Tests.Controllers
 
         private static AccountController GetAccountController()
         {
+            RequestContext requestContext = new RequestContext(new MockHttpContext(), new RouteData());
             AccountController controller = new AccountController()
             {
                 FormsService = new MockFormsAuthenticationService(),
-                MembershipService = new MockMembershipService()
+                MembershipService = new MockMembershipService(),
+                Url = new UrlHelper(requestContext),
             };
             controller.ControllerContext = new ControllerContext()
             {
                 Controller = controller,
-                RequestContext = new RequestContext(new MockHttpContext(), new RouteData())
+                RequestContext = requestContext
             };
             return controller;
         }
@@ -352,6 +377,7 @@ namespace MvcHist.Tests.Controllers
         private class MockHttpContext : HttpContextBase
         {
             private readonly IPrincipal _user = new GenericPrincipal(new GenericIdentity("someUser"), null /* roles */);
+            private readonly HttpRequestBase _request = new MockHttpRequest();
 
             public override IPrincipal User
             {
@@ -362,6 +388,27 @@ namespace MvcHist.Tests.Controllers
                 set
                 {
                     base.User = value;
+                }
+            }
+
+            public override HttpRequestBase Request
+            {
+                get
+                {
+                    return _request;
+                }
+            }
+        }
+
+        private class MockHttpRequest : HttpRequestBase
+        {
+            private readonly Uri _url = new Uri("http://mysite.example.com/");
+
+            public override Uri Url
+            {
+                get
+                {
+                    return _url;
                 }
             }
         }
