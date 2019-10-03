@@ -6,7 +6,7 @@
     <ProductVersion>
     </ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{031DACBD-40AA-46D8-9206-65F51E646740}</ProjectGuid>
+    <ProjectGuid>{7F943490-0FC2-416F-AB59-A79DD6087C47}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>MvcHist.Tests</RootNamespace>
@@ -44,7 +44,7 @@
     <Reference Include="System.Web.ApplicationServices" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Web.Abstractions" />
-    <Reference Include="System.Web.Mvc, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Web.Mvc, Version=3.0.0.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Web.Routing" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -58,7 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MvcHist\MvcHist.csproj">
-      <Project>{F941D78C-EA60-471B-8B60-5910429DE45F}</Project>
+      <Project>{29FBBB72-3539-46B4-B80B-7A757A8F5A14}</Project>
       <Name>MvcHist</Name>
     </ProjectReference>
   </ItemGroup>
