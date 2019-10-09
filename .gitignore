@@ -1,6 +1,7 @@
 bin/
 obj/
-.suo
-.user
+*.suo
+*.user
 publish/
 packages/
+.vs/
