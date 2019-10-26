@@ -8,7 +8,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitignore = .gitignore
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MvcHist", "MvcHist\MvcHist.csproj", "{08F5C633-5E76-47B1-AF3D-B5FA9E922A61}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MvcHist", "MvcHist\MvcHist.csproj", "{33DE4298-562B-49AC-AF50-2ED27DE58A45}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -16,16 +16,13 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{08F5C633-5E76-47B1-AF3D-B5FA9E922A61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{08F5C633-5E76-47B1-AF3D-B5FA9E922A61}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{08F5C633-5E76-47B1-AF3D-B5FA9E922A61}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{08F5C633-5E76-47B1-AF3D-B5FA9E922A61}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33DE4298-562B-49AC-AF50-2ED27DE58A45}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33DE4298-562B-49AC-AF50-2ED27DE58A45}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33DE4298-562B-49AC-AF50-2ED27DE58A45}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33DE4298-562B-49AC-AF50-2ED27DE58A45}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{08F5C633-5E76-47B1-AF3D-B5FA9E922A61} = {A6F77D85-4DB2-4B4F-BB1C-125453BF7FC0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DC0AAC13-A670-463D-9D7E-C7F02CB9E51A}
