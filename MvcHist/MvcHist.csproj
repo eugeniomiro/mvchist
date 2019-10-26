@@ -2,17 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <UserSecretsId>aspnet-MvcHist-D29E4CE2-4D2C-414A-BC07-155B3C950479</UserSecretsId>
+    <UserSecretsId>aspnet-MvcHist-D14ADECD-5177-49B9-A807-082934F2EF19</UserSecretsId>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Update="app.db" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.1.2" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.1.11" />
   </ItemGroup>
 
 </Project>
